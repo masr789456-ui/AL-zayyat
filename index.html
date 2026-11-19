@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>يومي افضل</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- شاشة الإعداد: تظهر أول مرة فقط -->
+  <div id="setup" class="setup" hidden>
+    <div class="setup-box">
+      <h1>أهلاً بك في يومي افضل</h1>
+      <p>اختر مرحلتك الدراسية، وسنجهز لك مساحتك الخاصة.</p>
+      <label>نوع التعليم
+        <select id="system"></select>
+      </label>
+      <label id="college-wrap" hidden>اسم الكلية والقسم
+        <input id="college" type="text" placeholder="مثال: كلية التجارة - قسم المحاسبة">
+      </label>
+      <label>الصف أو الفرقة
+        <select id="grade"></select>
+      </label>
+      <button id="save-setup" class="btn">ابدأ</button>
+    </div>
+  </div>
+
+  <div id="app" class="app" hidden>
+    <aside class="side">
+      <div class="brand">
+        <strong>يومي افضل</strong>
+        <span>مساحتك الخاصة للتعلم والتنظيم والإنجاز</span>
+      </div>
+      <nav id="nav"></nav>
+    </aside>
+
+    <main class="main">
+      <header class="top">
+        <div>
+          <h2 id="view-title">الرئيسية</h2>
+          <p id="profile-line"></p>
+        </div>
+        <button id="change-profile" class="link">تغيير المرحلة</button>
+      </header>
+      <section id="view"></section>
+    </main>
+  </div>
+
+  <script src="subjects.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
