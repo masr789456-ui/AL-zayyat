@@ -6,6 +6,7 @@ window.VIEWS = window.VIEWS || {};
   const TASKS_KEY = "platform-tasks";
   const TYPES = { lesson: "درس أو محاضرة", study: "مذاكرة", rest: "راحة", sleep: "نوم", personal: "التزام شخصي" };
   const COLORS = { lesson: "#1f7a6b", study: "#2b5fa8", rest: "#8a6d1b", sleep: "#5b4a8a", personal: "#9a4a3a" };
+  const PRAYERS = [["Fajr", "الفجر"], ["Dhuhr", "الظهر"], ["Asr", "العصر"], ["Maghrib", "المغرب"], ["Isha", "العشاء"]];
 
   function read(key, fallback) {
     try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch (e) { return fallback; }
@@ -23,6 +24,14 @@ window.VIEWS = window.VIEWS || {};
     return (h % 12 || 12) + ":" + pad(m) + (h < 12 ? " ص" : " م");
   }
   function hourLabel(h) { return (h % 12 || 12) + (h < 12 ? " ص" : " م"); }
+
+  // مواقيت الصلاة المحفوظة من قسم صلاتي
+  function prayerTimesFor(dateIso) {
+    const p = read("platform-prayer", null);
+    if (!p) return null;
+    if (p.mode === "manual") return PRAYERS.every(x => p.manual && p.manual[x[0]]) ? p.manual : null;
+    return p.cache && p.cache.date === dateIso ? p.cache.times : null;
+  }
 
   // كل نص ساعة على مدار اليوم
   const TIMES = [];
@@ -71,6 +80,9 @@ window.VIEWS = window.VIEWS || {};
       };
       dayBlocks.forEach(b => put(b.start, blockHtml(b)));
       tasks.filter(t => t.time).forEach(t => put(t.time, taskHtml(t)));
+      const pt = prayerTimesFor(dateIso);
+      if (pt) PRAYERS.forEach(p => put(pt[p[0]],
+        `<div class="card" style="border-right:5px solid #d9a21b;padding:10px 14px"><strong>صلاة ${p[1]}</strong><p>${fmt(pt[p[0]])}</p></div>`));
       const untimed = tasks.filter(t => !t.time);
 
       const rows = [];
@@ -107,7 +119,7 @@ window.VIEWS = window.VIEWS || {};
             </label>
           </div>
           <label style="display:flex;gap:8px;align-items:center">
-            <input id="b-daily" type="checkbox"> يتكرر كل يوم (مثل النوم أو الصلاة)
+            <input id="b-daily" type="checkbox"> يتكرر كل يوم (مثل النوم أو الراحة)
           </label>
           <button id="b-add" class="btn">إضافة للجدول</button>
         </div>

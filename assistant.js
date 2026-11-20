@@ -8,6 +8,7 @@ window.VIEWS = window.VIEWS || {};
   const BACKLOG_KEY = "platform-backlog";
   const BSET_KEY = "platform-backlog-settings";
   const ASET_KEY = "platform-assistant-settings";
+  const PRAYERS = [["Fajr", "الفجر"], ["Dhuhr", "الظهر"], ["Asr", "العصر"], ["Maghrib", "المغرب"], ["Isha", "العشاء"]];
   const BREAK = 10;
   const RANK = { high: 0, mid: 1, low: 2 };
 
@@ -38,6 +39,18 @@ window.VIEWS = window.VIEWS || {};
 
   const TIMES = [];
   for (let h = 0; h < 24; h++) { TIMES.push(pad(h) + ":00"); TIMES.push(pad(h) + ":30"); }
+
+  // مواقيت الصلاة المحفوظة من قسم صلاتي
+  function prayerInfo(dateIso, todayIso) {
+    const p = read("platform-prayer", null);
+    if (!p) return { times: null, note: "missing" };
+    if (p.mode === "manual") {
+      return PRAYERS.every(x => p.manual && p.manual[x[0]]) ? { times: p.manual, note: "" } : { times: null, note: "missing" };
+    }
+    if (p.cache && p.cache.date === dateIso) return { times: p.cache.times, note: "" };
+    if (p.cache && p.cache.date === todayIso && dateIso > todayIso) return { times: p.cache.times, note: "approx" };
+    return { times: null, note: "missing" };
+  }
 
   // جلسات التراكمات ليوم معين (نفس منطق قسم تراكماتي)
   function backlogSessions(dayIndex, today) {
@@ -93,6 +106,17 @@ window.VIEWS = window.VIEWS || {};
       tasks.filter(t => !t.done && t.date === dateIso && t.time).forEach(t => busy.push([toMin(t.time), toMin(t.time) + taskMin]));
       read(LESSONS_KEY, []).filter(l => !l.done && l.date === dateIso && l.time).forEach(l => busy.push([toMin(l.time), toMin(l.time) + 60]));
 
+      // الصلاة: 20 دقيقة + 5 دقايق راحة
+      const pr = prayerInfo(dateIso, todayIso);
+      const prayerItems = [];
+      if (pr.times) PRAYERS.forEach(p => {
+        const t = pr.times[p[0]];
+        if (!t) return;
+        const s = toMin(t);
+        busy.push([s, s + 25]);
+        if (s < we && s + 20 > ws) prayerItems.push({ kind: "prayer", title: "صلاة " + p[1], start: s, end: s + 20 });
+      });
+
       function place(d) {
         for (let t = ws; t + d <= we; t += 5) {
           if (!busy.some(b => t < b[1] && t + d > b[0])) { busy.push([t, t + d + BREAK]); return t; }
@@ -114,8 +138,9 @@ window.VIEWS = window.VIEWS || {};
         if (s === null) skipped++;
         else placed.push({ kind: "backlog", title: b.title, sub: b.subject, start: s, end: s + b.min });
       });
+      prayerItems.forEach(p => placed.push(p));
       placed.sort((a, b) => a.start - b.start);
-      return { dateIso, date: addDays(now, dayIndex), placed, unfit, skipped };
+      return { dateIso, date: addDays(now, dayIndex), placed, unfit, skipped, note: pr.note };
     }
 
     function apply(r) {
@@ -125,7 +150,7 @@ window.VIEWS = window.VIEWS || {};
         if (p.kind === "task") {
           const t = tasks.find(x => x.id === p.id);
           if (t) { t.date = r.dateIso; t.time = toTime(p.start); }
-        } else {
+        } else if (p.kind === "backlog") {
           blocks.push({ id: Date.now() + "-" + Math.random().toString(36).slice(2, 6), title: p.title, type: "study",
             start: toTime(p.start), end: toTime(p.end), daily: false, date: r.dateIso, auto: true });
         }
@@ -142,11 +167,14 @@ window.VIEWS = window.VIEWS || {};
         out = `<div class="empty"><strong>${result.error}</strong></div>`;
       } else if (result) {
         const dayName = result.date.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" });
+        const actionable = result.placed.filter(p => p.kind !== "prayer");
+        const kindText = { task: "مهمة", backlog: "جلسة تراكمات", prayer: "وقت الصلاة (محجوز)" };
+        const kindColor = { task: "#2b5fa8", backlog: "#1f7a6b", prayer: "#d9a21b" };
         const rows = result.placed.map(p => `
-          <div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px;border-right:5px solid ${p.kind === "task" ? "#2b5fa8" : "#1f7a6b"}">
+          <div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px;border-right:5px solid ${kindColor[p.kind]}">
             <div style="min-width:150px;font-weight:700">${label(p.start)} - ${label(p.end)}</div>
             <div style="flex:1"><strong>${esc(p.title)}</strong>
-              <p>${p.kind === "task" ? (p.late ? "مهمة متأخرة، اقترحنا لها موعدًا جديدًا" : "مهمة") : "جلسة تراكمات"}${p.sub ? " • " + esc(p.sub) : ""}</p></div>
+              <p>${p.kind === "task" && p.late ? "مهمة متأخرة، اقترحنا لها موعدًا جديدًا" : kindText[p.kind]}${p.sub ? " • " + esc(p.sub) : ""}</p></div>
           </div>`).join("");
         const unfit = result.unfit.length
           ? `<div class="card" style="border-right:5px solid #d9a21b;margin-top:12px"><h3>لم يتسع الوقت لهذه المهام</h3>
@@ -154,10 +182,14 @@ window.VIEWS = window.VIEWS || {};
               <p style="margin-top:6px">زوّد وقت المذاكرة أو جرّب «بكرة»، ولن تضيع من قائمة مهامك.</p></div>` : "";
         const skipped = result.skipped
           ? `<p style="margin-top:12px">${result.skipped} جلسة تراكمات لم تتسع اليوم، وستتوزع على الأيام التالية.</p>` : "";
+        const note = result.note === "missing"
+          ? `<p style="margin-top:12px">مواقيت الصلاة غير محفوظة لهذا اليوم، فالجدول لم يحسب حسابها. افتح «صلاتي» واضغط «هات المواقيت» أولًا.</p>`
+          : result.note === "approx"
+            ? `<p style="margin-top:12px">مواقيت الصلاة ليوم بكرة تقريبية، مأخوذة من مواقيت اليوم.</p>` : "";
         out = `<h3 style="margin:18px 0 10px">اقتراح ${dayName}</h3>
-          ${rows || `<div class="empty"><strong>لا يوجد ما نجدوله</strong>لا توجد مهام أو تراكمات لهذا اليوم.</div>`}
-          ${unfit}${skipped}
-          ${result.placed.length ? `<div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          ${actionable.length ? rows : `<div class="empty"><strong>لا يوجد ما نجدوله</strong>لا توجد مهام أو تراكمات لهذا اليوم.</div>`}
+          ${unfit}${skipped}${note}
+          ${actionable.length ? `<div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <button id="a-apply" class="btn">اعتمد الجدول</button>
             ${applied ? '<strong style="color:#155a4f">اتضاف لجدولك اليومي</strong>' : ""}</div>` : ""}`;
       }
@@ -165,7 +197,7 @@ window.VIEWS = window.VIEWS || {};
       box.innerHTML = `
         <div class="card" style="display:grid;gap:12px">
           <h3>اقترح لي جدولًا مناسبًا</h3>
-          <p>يرتّب لك مهامك وتراكماتك في الوقت الفاضي بعد أنشطتك الثابتة، مع راحة ${BREAK} دقائق بين كل نشاط.</p>
+          <p>يرتّب لك مهامك وتراكماتك في الوقت الفاضي بعد أنشطتك الثابتة ومواقيت الصلاة، مع راحة ${BREAK} دقائق بين كل نشاط.</p>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
             <label style="${lbl}">لأي يوم؟
               <select id="a-day"><option value="0" ${set.day === "0" ? "selected" : ""}>النهارده</option><option value="1" ${set.day === "1" ? "selected" : ""}>بكرة</option></select>
