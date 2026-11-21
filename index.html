@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>يومي افضل</title>
+  <title>يومي أفضل</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;700&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
   <!-- شاشة الإعداد: تظهر أول مرة فقط -->
   <div id="setup" class="setup" hidden>
     <div class="setup-box">
-      <h1>أهلاً بك في يومي افضل</h1>
+      <h1>أهلاً بك في يومي أفضل</h1>
       <p>اختر مرحلتك الدراسية، وسنجهز لك مساحتك الخاصة.</p>
       <label>نوع التعليم
         <select id="system"></select>
@@ -32,7 +32,7 @@
   <div id="app" class="app" hidden>
     <aside class="side">
       <div class="brand">
-        <strong>يومي افضل</strong>
+        <strong>يومي أفضل</strong>
         <span>مساحتك الخاصة للتعلم والتنظيم والإنجاز</span>
       </div>
       <nav id="nav"></nav>
@@ -50,17 +50,22 @@
     </main>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="account.js"></script>
   <script src="subjects.js"></script>
   <script src="tasks.js"></script>
-  <script src="files.js"></script>
-    <script src="daily.js"></script>
-  <script src="weekly.js"></script>  
+  <script src="daily.js"></script>
+  <script src="weekly.js"></script>
   <script src="lessons.js"></script>
   <script src="progress.js"></script>
   <script src="backlog.js"></script>
-   <script src="assistant.js"></script>
-   <script src="prayer.js"></script>
-   <script src="alerts.js"></script>
+  <script src="assistant.js"></script>
+  <script src="prayer.js"></script>
+  <script src="alerts.js"></script>
+  <script src="files.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
